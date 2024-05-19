@@ -189,7 +189,7 @@ def image_demo(predictor, vis_folder, current_time, args):
     for frame_id, img_path in enumerate(files):
         outputs, img_info = predictor.inference(img_path, timer)
         if outputs[0].boxes is not None:
-            online_targets = tracker.update(outputs[0].boxes, [img_info['height'], img_info['width']], exp.test_size)
+            online_targets = tracker.update(outputs[0].boxes, [img_info['height'], img_info['width'], img_info['raw_img']], exp.test_size)
             online_tlwhs = []
             online_ids = []
             online_scores = []
