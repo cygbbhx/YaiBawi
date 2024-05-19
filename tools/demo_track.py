@@ -13,7 +13,7 @@ from yolox.utils import fuse_model, get_model_info, postprocess
 from yolox.utils.visualize import plot_tracking
 from yolox.tracker.byte_tracker import BYTETracker
 from yolox.tracking_utils.timer import Timer
-
+from ultralytics import YOLO
 
 IMAGE_EXT = [".jpg", ".jpeg", ".webp", ".bmp", ".png"]
 
@@ -27,8 +27,9 @@ def make_parser():
     parser.add_argument("-n", "--name", type=str, default=None, help="model name")
 
     parser.add_argument(
-        #"--path", default="./datasets/mot/train/MOT17-05-FRCNN/img1", help="path to images or video"
-        "--path", default="./videos/palace.mp4", help="path to images or video"
+        # "--path", default="/home/work/YaiBawi-data/MOT17/train/MOT17-05-FRCNN/img1/", help="path to images or video"
+        "--path", default="../marioparty_annotated/images/", help="path to images or video"
+        # "--path", default="../baseline.mp4", help="path to images or video"
     )
     parser.add_argument("--camid", type=int, default=0, help="webcam demo camera id")
     parser.add_argument(
@@ -80,7 +81,7 @@ def make_parser():
     # tracking args
     parser.add_argument("--track_thresh", type=float, default=0.5, help="tracking confidence threshold")
     parser.add_argument("--track_buffer", type=int, default=30, help="the frames for keep lost tracks")
-    parser.add_argument("--match_thresh", type=float, default=0.8, help="matching threshold for tracking")
+    parser.add_argument("--match_thresh", type=float, default=0.95, help="matching threshold for tracking")
     parser.add_argument(
         "--aspect_ratio_thresh", type=float, default=1.6,
         help="threshold for filtering out boxes of which aspect ratio are above the given value."
@@ -165,12 +166,12 @@ class Predictor(object):
 
         with torch.no_grad():
             timer.tic()
-            outputs = self.model(img)
+            outputs = self.model.predict(img)
             if self.decoder is not None:
                 outputs = self.decoder(outputs, dtype=outputs.type())
-            outputs = postprocess(
-                outputs, self.num_classes, self.confthre, self.nmsthre
-            )
+            # outputs = postprocess(
+            #     outputs, self.num_classes, self.confthre, self.nmsthre
+            # )
             #logger.info("Infer time: {:.4f}s".format(time.time() - t0))
         return outputs, img_info
 
@@ -180,15 +181,15 @@ def image_demo(predictor, vis_folder, current_time, args):
         files = get_image_list(args.path)
     else:
         files = [args.path]
-    files.sort()
+    files.sort(key=lambda x: int(os.path.basename(x).split('_')[1]))
     tracker = BYTETracker(args, frame_rate=args.fps)
     timer = Timer()
     results = []
 
-    for frame_id, img_path in enumerate(files, 1):
+    for frame_id, img_path in enumerate(files):
         outputs, img_info = predictor.inference(img_path, timer)
-        if outputs[0] is not None:
-            online_targets = tracker.update(outputs[0], [img_info['height'], img_info['width']], exp.test_size)
+        if outputs[0].boxes is not None:
+            online_targets = tracker.update(outputs[0].boxes, [img_info['height'], img_info['width']], exp.test_size)
             online_tlwhs = []
             online_ids = []
             online_scores = []
@@ -259,8 +260,8 @@ def imageflow_demo(predictor, vis_folder, current_time, args):
         ret_val, frame = cap.read()
         if ret_val:
             outputs, img_info = predictor.inference(frame, timer)
-            if outputs[0] is not None:
-                online_targets = tracker.update(outputs[0], [img_info['height'], img_info['width']], exp.test_size)
+            if outputs[0].boxes is not None:
+                online_targets = tracker.update(outputs[0].boxes, [img_info['height'], img_info['width']], exp.test_size)
                 online_tlwhs = []
                 online_ids = []
                 online_scores = []
@@ -332,9 +333,10 @@ def main(exp, args):
         else:
             ckpt_file = args.ckpt
         logger.info("loading checkpoint")
-        ckpt = torch.load(ckpt_file, map_location="cpu")
+        # ckpt = torch.load(ckpt_file, map_location="cpu")
         # load the model state dict
-        model.load_state_dict(ckpt["model"])
+        # model.load_state_dict(ckpt["model"])
+        model = YOLO(ckpt_file)
         logger.info("loaded checkpoint done.")
 
     if args.fuse:
