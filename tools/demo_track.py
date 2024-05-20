@@ -12,6 +12,7 @@ from yolox.exp import get_exp
 from yolox.utils import fuse_model, get_model_info, postprocess
 from yolox.utils.visualize import plot_tracking
 from yolox.tracker.byte_tracker import BYTETracker
+from yolox.ours.reid_tracker import ReIdTracker
 from yolox.tracking_utils.timer import Timer
 from ultralytics import YOLO
 
@@ -182,14 +183,15 @@ def image_demo(predictor, vis_folder, current_time, args):
     else:
         files = [args.path]
     files.sort(key=lambda x: int(os.path.basename(x).split('_')[1]))
-    tracker = BYTETracker(args, frame_rate=args.fps)
+    # tracker = BYTETracker(args, frame_rate=args.fps)
+    tracker = ReIdTracker(args, frame_rate=args.fps)
     timer = Timer()
     results = []
 
     for frame_id, img_path in enumerate(files):
         outputs, img_info = predictor.inference(img_path, timer)
         if outputs[0].boxes is not None:
-            online_targets = tracker.update(outputs[0].boxes, [img_info['height'], img_info['width']], exp.test_size)
+            online_targets = tracker.update(outputs[0].boxes, [img_info['height'], img_info['width'], img_info['raw_img']], exp.test_size)
             online_tlwhs = []
             online_ids = []
             online_scores = []
