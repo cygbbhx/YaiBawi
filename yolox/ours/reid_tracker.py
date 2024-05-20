@@ -130,6 +130,12 @@ class ReIdTracker(BYTETracker):
                 track.re_activate(det, self.frame_id, new_id=False)
                 refind_stracks.append(track)
 
+        if self.frame_id > 5 and len(u_detection) > 0:
+            reused_detections = True
+            inds_second = [(i in u_detection) or value for i, value in enumerate(inds_second)]
+            dets_second = bboxes[inds_second]
+            scores_second = scores[inds_second]
+
         ''' Step 3: Second association, with low score detection boxes'''
         # association the untrack to the low score detections
         if len(dets_second) > 0:
@@ -164,11 +170,13 @@ class ReIdTracker(BYTETracker):
                 lost_stracks.append(track)
 
         '''Deal with unconfirmed tracks, usually tracks with only one beginning frame'''
-        detections = [detections[i] for i in u_detection]
+        final_u_detection = u_detection_second if reused_detections else u_detection
+        final_detections = detections_second if reused_detections else detections
+        detections = [final_detections[i] for i in final_u_detection]
         dists = matching.iou_distance(unconfirmed, detections)
         if not self.args.mot20:
             dists = matching.fuse_score(dists, detections)
-        matches, u_unconfirmed, u_detection = matching.linear_assignment(dists, thresh=0.7)
+        matches, u_unconfirmed, final_u_detection = matching.linear_assignment(dists, thresh=0.7)
         for itracked, idet in matches:
             unconfirmed[itracked].update(detections[idet], self.frame_id)
             activated_starcks.append(unconfirmed[itracked])
@@ -178,7 +186,7 @@ class ReIdTracker(BYTETracker):
             removed_stracks.append(track)
 
         """ Step 4: Init new stracks"""
-        for inew in u_detection:
+        for inew in final_u_detection:
             track = detections[inew]
             if track.score < self.det_thresh:
                 continue
