@@ -28,8 +28,8 @@ def make_parser():
 
     parser.add_argument(
         # "--path", default="/home/work/YaiBawi-data/MOT17/train/MOT17-05-FRCNN/img1/", help="path to images or video"
-        "--path", default="../marioparty_annotated/images/", help="path to images or video"
-        # "--path", default="../baseline.mp4", help="path to images or video"
+        # "--path", default="../marioparty_annotated/images/", help="path to images or video"
+        "--path", default="../baseline.mp4", help="path to images or video"
     )
     parser.add_argument("--camid", type=int, default=0, help="webcam demo camera id")
     parser.add_argument(
@@ -186,6 +186,8 @@ def image_demo(predictor, vis_folder, current_time, args):
     timer = Timer()
     results = []
 
+    # prev_tlwhs = []
+    # prev_ids = []
     for frame_id, img_path in enumerate(files):
         outputs, img_info = predictor.inference(img_path, timer)
         if outputs[0].boxes is not None:
@@ -212,6 +214,28 @@ def image_demo(predictor, vis_folder, current_time, args):
         else:
             timer.toc()
             online_im = img_info['raw_img']
+
+        #########################################################################################################################
+        # print(outputs[0].boxes.shape)
+        exp_boxes = outputs[0].boxes.cpu().numpy().xyxy.tolist()
+
+        # print(exp_boxes)
+        # print(online_tlwhs)
+        # print(prev_ids)
+        
+        if frame_id != 0:
+            if prev_outputs[0].boxes is not None:
+                online_im = plot_tracking(online_im, exp_boxes, [i+1 for i in range(len(exp_boxes))], frame_id=frame_id, fps=1. / timer.average_time)
+        
+        
+        
+        prev_outputs = outputs
+        prev_img_info = img_info
+
+        prev_tlwhs = online_tlwhs
+        prev_ids = online_ids
+        #########################################################################################################################
+
 
         # result_image = predictor.visual(outputs[0], img_info, predictor.confthre)
         if args.save_result:
@@ -283,6 +307,16 @@ def imageflow_demo(predictor, vis_folder, current_time, args):
             else:
                 timer.toc()
                 online_im = img_info['raw_img']
+
+        #########################################################################################################################
+
+            exp_boxes = outputs[0].boxes.cpu().numpy().xyxy.tolist()
+            if frame_id != 0:
+                online_im = plot_tracking(online_im, exp_boxes, [i+1 for i in range(len(exp_boxes))], frame_id=frame_id, fps=1. / timer.average_time)
+
+        #########################################################################################################################
+
+
             if args.save_result:
                 vid_writer.write(online_im)
             ch = cv2.waitKey(1)
@@ -361,6 +395,8 @@ def main(exp, args):
 
     predictor = Predictor(model, exp, trt_file, decoder, args.device, args.fp16)
     current_time = time.localtime()
+
+    args.demo = "video"
     if args.demo == "image":
         image_demo(predictor, vis_folder, current_time, args)
     elif args.demo == "video" or args.demo == "webcam":
