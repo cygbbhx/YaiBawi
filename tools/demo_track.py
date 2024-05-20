@@ -14,6 +14,7 @@ from yolox.utils.visualize import plot_tracking
 from yolox.tracker.byte_tracker import BYTETracker
 from yolox.tracking_utils.timer import Timer
 from ultralytics import YOLO
+from custom_eval import evaluate_result
 
 IMAGE_EXT = [".jpg", ".jpeg", ".webp", ".bmp", ".png"]
 
@@ -231,6 +232,7 @@ def image_demo(predictor, vis_folder, current_time, args):
         res_file = osp.join(vis_folder, f"{timestamp}.txt")
         with open(res_file, 'w') as f:
             f.writelines(results)
+        evaluate_result(dest=res_file)
         logger.info(f"save results to {res_file}")
 
 
