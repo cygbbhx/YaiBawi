@@ -51,6 +51,12 @@ class OurDetection(STrack):
     def set_feature(self, feat):
         self.feature = feat
 
+    def update_direct(self, kalman_filter, new_track, frame_id):
+        self.update(new_track, frame_id)
+        self.kalman_filter = kalman_filter
+        new_tlwh = new_track._tlwh
+        self.mean, self.covariance = self.kalman_filter.initiate(self.tlwh_to_xyah(new_tlwh))
+
 class ReIdTracker(BYTETracker):
     def __init__(self, args, frame_rate=30, max_dist=0.1, nn_budget=100):
         super().__init__(args, frame_rate=frame_rate)
@@ -152,12 +158,14 @@ class ReIdTracker(BYTETracker):
         
         targets = [t.track_id for t in r_tracked_stracks]
         dists = self.metric.distance(features_second, targets)
-        matches, u_track, u_detection_second = matching.linear_assignment(dists, thresh=0.7)
+        # dists = matching.iou_distance(r_tracked_stracks, detections_second)
+        matches, u_track, u_detection_second = matching.linear_assignment(dists, thresh=self.args.second_thresh)
         for itracked, idet in matches:
             track = r_tracked_stracks[itracked]
             det = detections_second[idet]
             if track.state == TrackState.Tracked:
-                track.update(det, self.frame_id)
+                # track.update(det, self.frame_id)
+                track.update_direct(self.kalman_filter, det, self.frame_id)
                 activated_starcks.append(track)
             else:
                 track.re_activate(det, self.frame_id, new_id=False)
