@@ -11,7 +11,7 @@ from yolox.data.data_augment import preproc
 from yolox.exp import get_exp
 from yolox.utils import fuse_model, get_model_info, postprocess
 from yolox.utils.visualize import plot_tracking
-from yolox.tracker.byte_tracker import BYTETracker
+from yolox.tracker.byte_tracker import BYTETracker, STrack
 from yolox.tracking_utils.timer import Timer
 from ultralytics import YOLO
 
@@ -28,8 +28,8 @@ def make_parser():
 
     parser.add_argument(
         # "--path", default="/home/work/YaiBawi-data/MOT17/train/MOT17-05-FRCNN/img1/", help="path to images or video"
-        # "--path", default="../marioparty_annotated/images/", help="path to images or video"
-        "--path", default="../baseline.mp4", help="path to images or video"
+        "--path", default="../marioparty_annotated/images/", help="path to images or video"
+        # "--path", default="../baseline.mp4", help="path to images or video"
     )
     parser.add_argument("--camid", type=int, default=0, help="webcam demo camera id")
     parser.add_argument(
@@ -186,8 +186,6 @@ def image_demo(predictor, vis_folder, current_time, args):
     timer = Timer()
     results = []
 
-    # prev_tlwhs = []
-    # prev_ids = []
     for frame_id, img_path in enumerate(files):
         outputs, img_info = predictor.inference(img_path, timer)
         if outputs[0].boxes is not None:
@@ -216,24 +214,64 @@ def image_demo(predictor, vis_folder, current_time, args):
             online_im = img_info['raw_img']
 
         #########################################################################################################################
+        STrack.multi_predict(online_targets)
+        online_tlwhs = []
+        online_ids = []
+        online_scores = []
+        for t in online_targets:
+            tlwh = t.tlwh
+            tid = t.track_id
+            vertical = tlwh[2] / tlwh[3] > args.aspect_ratio_thresh
+            if tlwh[2] * tlwh[3] > args.min_box_area and not vertical:
+                online_tlwhs.append(tlwh)
+                online_ids.append(tid)
+                online_scores.append(t.score)
+                # save results
+                results.append(
+                    f"{frame_id},{tid},{tlwh[0]:.2f},{tlwh[1]:.2f},{tlwh[2]:.2f},{tlwh[3]:.2f},{t.score:.2f},-1,-1,-1\n"
+                )
+        timer.toc()
+        online_im = plot_tracking(
+            online_im, online_tlwhs, online_ids, frame_id=frame_id, fps=1. / timer.average_time
+        )
+        
+        
         # print(outputs[0].boxes.shape)
-        exp_boxes = outputs[0].boxes.cpu().numpy().xyxy.tolist()
+        # exp_boxes = outputs[0].boxes.cpu().numpy().xyxy
+        # exp_scores = outputs[0].boxes.cpu().numpy().conf
+        
+        # scale = min(exp.test_size[0] / float(img_info['height']), exp.test_size[1] / float(img_info['width']))
+        # exp_boxes /= scale
+
+        # exp_boxes = exp_boxes.tolist()
+
+        # if len(exp_boxes) > 0:
+        #     '''Detections'''
+        #     detections = [STrack(STrack.tlbr_to_tlwh(tlbr), s) for
+        #                   (tlbr, s) in zip(exp_boxes, scores_keep)]
+        # else:
+        #     detections = []
+
+
+        # strack_pool = joint_stracks(tracked_stracks, self.lost_stracks)
+        # STrack.multi_predict(strack_pool)
+
 
         # print(exp_boxes)
         # print(online_tlwhs)
         # print(prev_ids)
         
-        if frame_id != 0:
-            if prev_outputs[0].boxes is not None:
-                online_im = plot_tracking(online_im, exp_boxes, [i+1 for i in range(len(exp_boxes))], frame_id=frame_id, fps=1. / timer.average_time)
+        # if frame_id != 0:
+        #     if prev_outputs[0].boxes is not None:
+        #         online_im = plot_tracking(online_im, exp_boxes, [i+1 for i in range(len(exp_boxes))], frame_id=frame_id, fps=1. / timer.average_time)
         
         
         
-        prev_outputs = outputs
-        prev_img_info = img_info
+        # prev_outputs = outputs
+        # prev_img_info = img_info
 
-        prev_tlwhs = online_tlwhs
-        prev_ids = online_ids
+        # prev_tlwhs = online_tlwhs
+        # prev_ids = online_ids
         #########################################################################################################################
 
 
@@ -308,13 +346,34 @@ def imageflow_demo(predictor, vis_folder, current_time, args):
                 timer.toc()
                 online_im = img_info['raw_img']
 
-        #########################################################################################################################
+            #########################################################################################################################
+            STrack.multi_predict(online_targets)
+            online_tlwhs = []
+            online_ids = []
+            online_scores = []
+            for t in online_targets:
+                tlwh = t.tlwh
+                tid = t.track_id
+                vertical = tlwh[2] / tlwh[3] > args.aspect_ratio_thresh
+                if tlwh[2] * tlwh[3] > args.min_box_area and not vertical:
+                    online_tlwhs.append(tlwh)
+                    online_ids.append(tid)
+                    online_scores.append(t.score)
+                    # save results
+                    results.append(
+                        f"{frame_id},{tid},{tlwh[0]:.2f},{tlwh[1]:.2f},{tlwh[2]:.2f},{tlwh[3]:.2f},{t.score:.2f},-1,-1,-1\n"
+                    )
+            timer.toc()
+            online_im = plot_tracking(
+                online_im, online_tlwhs, online_ids, frame_id=frame_id, fps=1. / timer.average_time
+            )
 
-            exp_boxes = outputs[0].boxes.cpu().numpy().xyxy.tolist()
-            if frame_id != 0:
-                online_im = plot_tracking(online_im, exp_boxes, [i+1 for i in range(len(exp_boxes))], frame_id=frame_id, fps=1. / timer.average_time)
 
-        #########################################################################################################################
+            # exp_boxes = outputs[0].boxes.cpu().numpy().xyxy.tolist()
+            # if frame_id != 0:
+            #     online_im = plot_tracking(online_im, exp_boxes, [i+1 for i in range(len(exp_boxes))], frame_id=frame_id, fps=1. / timer.average_time)
+
+            #########################################################################################################################
 
 
             if args.save_result:
@@ -396,7 +455,7 @@ def main(exp, args):
     predictor = Predictor(model, exp, trt_file, decoder, args.device, args.fp16)
     current_time = time.localtime()
 
-    args.demo = "video"
+    # args.demo = "video"
     if args.demo == "image":
         image_demo(predictor, vis_folder, current_time, args)
     elif args.demo == "video" or args.demo == "webcam":
