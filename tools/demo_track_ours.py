@@ -197,7 +197,7 @@ def image_demo(predictor, vis_folder, current_time, args):
     for frame_id, img_path in enumerate(files):
         outputs, img_info = predictor.inference(img_path, timer)
         if outputs[0].boxes is not None:
-            online_targets = tracker.update(outputs[0].boxes, [img_info['height'], img_info['width'], img_info['raw_img']], exp.test_size)
+            online_targets = tracker.update(outputs[0].boxes, [img_info['height'], img_info['width'], img_info['raw_img']], predictor.test_size)
             online_tlwhs = []
             online_ids = []
             online_scores = []
@@ -258,7 +258,7 @@ def imageflow_demo(predictor, vis_folder, current_time, args):
     vid_writer = cv2.VideoWriter(
         save_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, (int(width), int(height))
     )
-    tracker = BYTETracker(args, frame_rate=30)
+    tracker = ReIdTracker(args, frame_rate=args.fps)
     timer = Timer()
     frame_id = 0
     results = []
@@ -269,7 +269,7 @@ def imageflow_demo(predictor, vis_folder, current_time, args):
         if ret_val:
             outputs, img_info = predictor.inference(frame, timer)
             if outputs[0].boxes is not None:
-                online_targets = tracker.update(outputs[0].boxes, [img_info['height'], img_info['width']], exp.test_size)
+                online_targets = tracker.update(outputs[0].boxes, [img_info['height'], img_info['width'], img_info['raw_img']], predictor.test_size)
                 online_tlwhs = []
                 online_ids = []
                 online_scores = []
