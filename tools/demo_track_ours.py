@@ -16,6 +16,7 @@ from yolox.ours.reid_tracker import ReIdTracker
 from yolox.tracking_utils.timer import Timer
 from ultralytics import YOLO
 from custom_eval import evaluate_result
+import wandb
 
 IMAGE_EXT = [".jpg", ".jpeg", ".webp", ".bmp", ".png"]
 
@@ -81,9 +82,13 @@ def make_parser():
         help="Using TensorRT model for testing.",
     )
     # tracking args
+    parser.add_argument("--wandb", action='store_true', help='whether to run wandb experiment')
     parser.add_argument("--track_thresh", type=float, default=0.5, help="tracking confidence threshold")
     parser.add_argument("--track_buffer", type=int, default=30, help="the frames for keep lost tracks")
     parser.add_argument("--match_thresh", type=float, default=0.95, help="matching threshold for tracking")
+    parser.add_argument("--second_thresh", type=float, default=0.6849731368687391, help="matching threshold for second tracking")
+    parser.add_argument("--iou_thresh", type=float, default=0.2, help="matching threshold for occlusion detection")
+    parser.add_argument("--max_dist", type=float, default=0.5, help="matching threshold for second tracking")
     parser.add_argument(
         "--aspect_ratio_thresh", type=float, default=1.6,
         help="threshold for filtering out boxes of which aspect ratio are above the given value."
@@ -234,7 +239,6 @@ def image_demo(predictor, vis_folder, current_time, args):
         res_file = osp.join(vis_folder, f"{timestamp}.txt")
         with open(res_file, 'w') as f:
             f.writelines(results)
-        evaluate_result(dest=res_file)
         logger.info(f"save results to {res_file}")
 
 
@@ -303,7 +307,21 @@ def imageflow_demo(predictor, vis_folder, current_time, args):
         logger.info(f"save results to {res_file}")
 
 
-def main(exp, args):
+def main():
+    args = make_parser().parse_args()
+    exp = get_exp(args.exp_file, args.name)
+    current_time = time.localtime()
+    timestamp = time.strftime("%Y_%m_%d_%H_%M_%S", current_time)
+    output_path = os.path.basename(args.exp_file).split('.')[-2]
+
+    if args.wandb:
+        run = wandb.init(name=f'{output_path}-{timestamp}')
+        args.track_thresh  =  wandb.config.track_thresh
+        args.match_thresh = wandb.config.match_thresh
+        args.second_thresh = wandb.config.second_thresh
+        # args.max_dist = wandb.config.max_dist
+        args.iou_thresh = wandb.config.iou_thresh
+
     if not args.experiment_name:
         args.experiment_name = exp.exp_name
 
@@ -364,15 +382,42 @@ def main(exp, args):
         decoder = None
 
     predictor = Predictor(model, exp, trt_file, decoder, args.device, args.fp16)
-    current_time = time.localtime()
     if args.demo == "image":
         image_demo(predictor, vis_folder, current_time, args)
     elif args.demo == "video" or args.demo == "webcam":
         imageflow_demo(predictor, vis_folder, current_time, args)
 
+    res_file = osp.join(vis_folder, f"{timestamp}.txt")
+    idf1, ids, mota = evaluate_result(dest=res_file)
+
+    if args.wandb:
+        wandb.log({
+            'idf1': idf1, 
+            'ids': ids,
+            'mota': mota
+        })
 
 if __name__ == "__main__":
     args = make_parser().parse_args()
-    exp = get_exp(args.exp_file, args.name)
+    
+    if args.wandb:
+        sweep_configuration = {
+            'method': 'random',
+            'name': 'depth-final',
+            'metric': {'goal': 'minimize', 'name': 'ids'},
+            'parameters': 
+            {
+                'track_thresh': {'max': 0.9, 'min': 0.7},
+                'match_thresh': {'max': 0.98, 'min': 0.8},
+                # 'second_thresh': {'max': 1.0, 'min': 0.5},
+                'second_thresh': {'values': [500, 300, 100, 50, 30, 10]},
+                # 'max_dist': {'values': [0.1, 0.3, 0.5, 0.7, 0.9, 1.0]},
+                'iou_thresh': {'max': 0.5, 'min':0.1}
+            }
+        }
 
-    main(exp, args)
+        # Initialize sweep by passing in config. (Optional) Provide a name of the project.
+        sweep_id = wandb.sweep(sweep=sweep_configuration, entity='cygbbhx', project='YaiBawi')
+        wandb.agent(sweep_id, function=main, count=600)
+    else:
+        main()
