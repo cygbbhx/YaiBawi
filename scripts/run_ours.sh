@@ -1,0 +1,1 @@
+python3 tools/demo_track_ours.py image -f exps/example/mot/yolox_x_ours.py -c pretrained/custom_yolo.pt --save_result
