@@ -3,3 +3,4 @@ __pycache__
 YOLOX_outputs
 *.tar
 *.pt
+wandb/
