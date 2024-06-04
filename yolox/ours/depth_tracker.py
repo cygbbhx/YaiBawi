@@ -73,7 +73,7 @@ class OurDetection(STrack):
     def current_depth(self):
         return self.tlwh[1] + self.tlwh[-1]
 
-class ReIdTracker(BYTETracker):
+class DepthTracker(BYTETracker):
     def __init__(self, args, frame_rate=30, max_dist=0.1, nn_budget=100):
         super().__init__(args, frame_rate=frame_rate)
         self.extractor = Extractor('pretrained/ckpt.t7', use_cuda=True)
@@ -174,13 +174,10 @@ class ReIdTracker(BYTETracker):
         
         targets = [t.track_id for t in r_tracked_stracks]
 
-        # if len(detections_second) > 0:
-            # print(f'rematch in frame {self.frame_id}')
-        # depth_dists = depth_distance(r_tracked_stracks, detections_second)
-        dists = self.metric.distance(features_second, targets)
-        # dists = matching.iou_distance(r_tracked_stracks, detections_second)
-        matches, u_track, u_detection_second = matching.linear_assignment(dists, thresh=self.args.second_thresh)
-        # matches, u_track, u_detection_second = matching.linear_assignment(depth_dists, thresh=self.args.second_thresh)
+        if len(detections_second) > 0:
+            print(f'rematch in frame {self.frame_id}')
+        depth_dists = depth_distance(r_tracked_stracks, detections_second)
+        matches, u_track, u_detection_second = matching.linear_assignment(depth_dists, thresh=self.args.second_thresh)
         for itracked, idet in matches:
             track = r_tracked_stracks[itracked]
             det = detections_second[idet]
@@ -336,6 +333,7 @@ def depth_distance(depths_a, depths_b, local=False):
             # else:
                 # costs[i, j] = abs(t_a.previous_depth - t_b.current_depth())
             costs[i, j] = abs(t_a.previous_depth - t_b.current_depth())
+    print(costs)
 
     return costs
 
