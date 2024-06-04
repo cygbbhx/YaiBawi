@@ -29,11 +29,11 @@ From this motivation, this project aims to 1) measure the performance of several
 ## Team Members
 
 <p>
-   <b>:nesting_dolls: Sohyun Yoo (YAI 12th)</b> - Baseline Experiments (DeepSORT, SparseTrack) / Main Experiments (Re-ID, Depth Tracker)</br>
+   <b>:nesting_dolls: Sohyun Yoo (YAI 12th)</b> - Baseline (DeepSORT, SparseTrack) | Main (Re-ID, Depth Tracker) Experiments </br>
    <b>:nesting_dolls: Jian Kim (YAI 12th)</b> - Custom Dataset Construction</br>
    <b>:nesting_dolls: Junghyun Park (YAI 12th)</b> - Related Works / Main Experiments (Mixed Tracker)</br>
    <b>:nesting_dolls: Gun Jegal (YAI 12th)</b> - Baseline Experiments (FairMOT)</br>
-   <b>:nesting_dolls: Kyunghoon Jung (YAI 12th)</b> - Baseline Experiments (ByteTrack) / Yolov8 Training / Main Experiments (LSTM Tracker) </br>
+   <b>:nesting_dolls: Kyunghoon Jung (YAI 12th)</b> - Yolov8 Training / Baseline (ByteTrack) | Main Experiments (LSTM Tracker) </br>
    <b>:nesting_dolls: Jimin Lee (YAI 11th)</b> - Baseline Experiments (MOTRv2)</br>
   
 </p>
