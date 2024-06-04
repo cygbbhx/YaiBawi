@@ -4,18 +4,13 @@ from yolox.tracker.basetrack import BaseTrack, TrackState
 from yolox.tracker.byte_tracker import STrack, BYTETracker, joint_stracks, sub_stracks, remove_duplicate_stracks
 from yolox.deepsort_tracker import kalman_filter, linear_assignment, iou_matching
 from yolox.tracker import matching
-import networkx as nx
 
 class OurDetection(STrack):
     def __init__(self, tlwh, score):
         super().__init__(tlwh, score)
-        self.feature = None
         self.occluded = False
         self.previous_depth = self._tlwh[1] + self._tlwh[-1]
         self.neighbors = set()
-    
-    def set_feature(self, feat):
-        self.feature = feat
 
     def update_direct(self, kalman_filter, new_track, frame_id):
         self.update(new_track, frame_id)
@@ -38,10 +33,6 @@ class OurDetection(STrack):
 class DepthTracker(BYTETracker):
     def __init__(self, args, frame_rate=30, max_dist=0.1, nn_budget=100):
         super().__init__(args, frame_rate=frame_rate)
-        self.extractor = Extractor('pretrained/ckpt.t7', use_cuda=True)
-        max_cosine_distance = max_dist
-        self.metric = NearestNeighborDistanceMetric(
-            "cosine", max_cosine_distance, nn_budget)
 
     def update(self, output_results, img_info, img_size):
         self.frame_id += 1
@@ -80,9 +71,6 @@ class DepthTracker(BYTETracker):
             '''Detections'''
             detections = [OurDetection(OurDetection.tlbr_to_tlwh(tlbr), s) for
                           (tlbr, s) in zip(dets, scores_keep)]
-            features = self._get_features(dets, raw_img)
-            for i, det in enumerate(detections):
-                det.set_feature(features[i])
         else:
             detections = []
 
@@ -126,12 +114,8 @@ class DepthTracker(BYTETracker):
             '''Detections'''
             detections_second = [OurDetection(OurDetection.tlbr_to_tlwh(tlbr), s) for
                           (tlbr, s) in zip(dets_second, scores_second)]
-            features_second = self._get_features(dets_second, raw_img)
-            for i, det in enumerate(detections_second):
-                det.set_feature(features_second[i])
         else:
             detections_second = []
-            features_second = []
         r_tracked_stracks = [strack_pool[i] for i in u_track if strack_pool[i].state == TrackState.Tracked]
         
         targets = [t.track_id for t in r_tracked_stracks]
@@ -199,12 +183,8 @@ class DepthTracker(BYTETracker):
         # get scores of lost tracks
         output_stracks = [track for track in self.tracked_stracks if track.is_activated]
 
-        tracked_features = [t.feature for t in self.tracked_stracks]
         targets = [t.track_id for t in self.tracked_stracks]
         active_targets = [t.track_id for t in output_stracks]
-
-        self.metric.partial_fit(
-            np.asarray(tracked_features), np.asarray(targets), active_targets)
 
         return output_stracks
 
@@ -220,18 +200,6 @@ class DepthTracker(BYTETracker):
         y1 = max(int(y), 0)
         y2 = min(int(y+h), self.height - 1)
         return x1, y1, x2, y2
-
-    def _get_features(self, bbox_xywh, ori_img):
-        im_crops = []
-        for box in bbox_xywh:
-            x1, y1, x2, y2 = self._tlwh_to_xyxy(box)
-            im = ori_img[y1:y2, x1:x2]
-            im_crops.append(im)
-        if im_crops:
-            features = self.extractor(im_crops)
-        else:
-            features = np.array([])
-        return features
 
 def depth_distance(depths_a, depths_b, local=False):
     """
@@ -252,7 +220,7 @@ def depth_distance(depths_a, depths_b, local=False):
                     costs[i, j] = 2000
                     continue
             costs[i, j] = abs(t_a.previous_depth - t_b.current_depth())
-    print(costs)
+    # print(costs)
 
     return costs
 
