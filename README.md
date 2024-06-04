@@ -6,6 +6,8 @@
 <p align="center"><img src="https://github.com/cygbbhx/YaiBawi/blob/main/videos/demo.gif" width="50%" height="50%"></p>
 </br>
 
+---
+
 ## Updates
 
 - [ ] Release our custom dataset.
@@ -14,7 +16,7 @@
 - [ ] Update additional experimental results.
 - [x] 06/04/2024: *Initial version of code released.*
 
----
+
 ## Introduction
 In Object Tracking, "ID Switch" refers to a problem where the identities of two or more objects are swapped during tracking as they overlap. This is a common issue in Multi-Object Tracking, and some research addresses this problem using appearance-based matching. 
 
@@ -27,11 +29,11 @@ From this motivation, this project aims to 1) measure the performance of several
 ## Team Members
 
 <p>
-   <b>:nesting_dolls: Sohyun Yoo (YAI 12th)</b> - Main Experiments (Re-ID, Depth Tracker)</br>
+   <b>:nesting_dolls: Sohyun Yoo (YAI 12th)</b> - Baseline Experiments (DeepSORT, SparseTrack) / Main Experiments (Re-ID, Depth Tracker)</br>
    <b>:nesting_dolls: Jian Kim (YAI 12th)</b> - Custom Dataset Construction</br>
    <b>:nesting_dolls: Junghyun Park (YAI 12th)</b> - Related Works / Main Experiments (Mixed Tracker)</br>
    <b>:nesting_dolls: Gun Jegal (YAI 12th)</b> - Baseline Experiments (FairMOT)</br>
-   <b>:nesting_dolls: Kyunghoon Jung (YAI 12th)</b> - Yolov8 Training / Main Experiments (LSTM Tracker) </br>
+   <b>:nesting_dolls: Kyunghoon Jung (YAI 12th)</b> - Baseline Experiments (ByteTrack) / Yolov8 Training / Main Experiments (LSTM Tracker) </br>
    <b>:nesting_dolls: Jimin Lee (YAI 11th)</b> - Baseline Experiments (MOTRv2)</br>
   
 </p>
