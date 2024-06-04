@@ -3,46 +3,8 @@ from yolox.tracker import matching
 from yolox.tracker.basetrack import BaseTrack, TrackState
 from yolox.tracker.byte_tracker import STrack, BYTETracker, joint_stracks, sub_stracks, remove_duplicate_stracks
 from yolox.deepsort_tracker import kalman_filter, linear_assignment, iou_matching
-from yolox.deepsort_tracker.reid_model import Extractor
 from yolox.tracker import matching
 import networkx as nx
-
-def _cosine_distance(a, b, data_is_normalized=False):
-    if not data_is_normalized:
-        a = np.asarray(a) / np.linalg.norm(a, axis=1, keepdims=True)
-        b = np.asarray(b) / np.linalg.norm(b, axis=1, keepdims=True)
-    return 1. - np.dot(a, b.T)
-
-
-def _nn_cosine_distance(x, y):
-    distances = _cosine_distance(x, y)
-    return distances.min(axis=0)
-
-class NearestNeighborDistanceMetric(object):
-    def __init__(self, metric, matching_threshold, budget=None):
-
-        if metric == "cosine":
-            self._metric = _nn_cosine_distance
-        else:
-            raise ValueError(
-                "Invalid metric; must be either 'euclidean' or 'cosine'")
-        self.matching_threshold = matching_threshold
-        self.budget = budget
-        self.samples = {}
-
-    def partial_fit(self, features, targets, active_targets):
-        for feature, target in zip(features, targets):
-            self.samples.setdefault(target, []).append(feature)
-            if self.budget is not None:
-                self.samples[target] = self.samples[target][-self.budget:]
-        self.samples = {k: self.samples[k] for k in active_targets}
-
-    def distance(self, features, targets):
-        cost_matrix = np.zeros((len(targets), len(features)))
-        for i, target in enumerate(targets):
-            cost_matrix[i, :] = self._metric(self.samples[target], features)
-        return cost_matrix
-
 
 class OurDetection(STrack):
     def __init__(self, tlwh, score):
@@ -237,47 +199,6 @@ class DepthTracker(BYTETracker):
         # get scores of lost tracks
         output_stracks = [track for track in self.tracked_stracks if track.is_activated]
 
-        # # Double check previously occluded tracks
-        # revised_stracks = [track for track in self.tracked_stracks if track.occluded]
-
-        # if len(revised_stracks) > 0:
-        #     depth_dists = depth_distance(revised_stracks, revised_stracks, local=True)
-        #     matches, _, _ = matching.linear_assignment(depth_dists, thresh=np.inf) # bipartite matching, no match cannot exist
-            
-        #     for itracked, idet in matches:
-        #         if itracked == idet:
-        #             continue
-        #         self.tracked_stracks[itracked].update_direct(self.kalman_filter, revised_stracks[idet], self.frame_id)
-        
-        # # Upate Occlusion Status
-        # tracked_bboxes = [track.tlwh for track in self.tracked_stracks]
-        # iou_distances = calculate_iou_matrix(tracked_bboxes) 
-
-        # occlusion_groups = find_occlusions(iou_distances, iou_threshold=self.args.iou_thresh)
-        # occluded_inst = sum(occlusion_groups, [])
-        # for idx in range(len(self.tracked_stracks)):
-        #     if idx not in occluded_inst:
-        #         self.tracked_stracks[idx].set_not_occluded()
-        
-        # for group in occlusion_groups:
-        #     print(f'rematch in frame {self.frame_id}')
-        #     print(f'rematching {group}')
-        #     for i in range(len(group)):
-        #         for j in range(i+1, len(group)):
-        #             reid_pair = [self.tracked_stracks[i], self.tracked_stracks[j]]
-        #             depth_dists = depth_distance(reid_pair, reid_pair)
-        #             matches, _, _ = matching.linear_assignment(depth_dists, thresh=np.inf) # bipartite matching, no match cannot exist
-                    
-        #     for itracked, idet in matches:
-        #         if itracked == idet:
-        #             continue
-        #         self.tracked_stracks[itracked].update_direct(self.kalman_filter, reid_pair[idet], self.frame_id)
-
-        #     for i in range(len(group)):
-        #         for j in range(i+1, len(group)):
-        #             self.tracked_stracks[i].prepare_rematch(self.tracked_stracks[j].track_id)
-        #             self.tracked_stracks[j].prepare_rematch(self.tracked_stracks[i].track_id)
-
         tracked_features = [t.feature for t in self.tracked_stracks]
         targets = [t.track_id for t in self.tracked_stracks]
         active_targets = [t.track_id for t in output_stracks]
@@ -330,8 +251,6 @@ def depth_distance(depths_a, depths_b, local=False):
                 if t_b.track_id not in t_a.neighbors and t_b.track_id != t_a.track_id:
                     costs[i, j] = 2000
                     continue
-            # else:
-                # costs[i, j] = abs(t_a.previous_depth - t_b.current_depth())
             costs[i, j] = abs(t_a.previous_depth - t_b.current_depth())
     print(costs)
 
