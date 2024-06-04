@@ -1,5 +1,5 @@
 # YaiBawi (ShellTrack)
-### :1st_place_medal: YAICON 4rd 1st Prize
+### :1st_place_medal: YAICON 4th :sparkles:1st Prize:sparkles:
 </br>
 <h2 align="center"> :nesting_dolls: ShellTrack: Multi-Object Tracking in <br/>IDENTICAL Appearance and FAST Motion </h2>
 </br>
