@@ -78,6 +78,7 @@ class STrack(BaseTrack):
         """
         self.frame_id = frame_id
         self.tracklet_len += 1
+        self.previous_depth = self.tlwh[1] + self.tlwh[-1]
 
         new_tlwh = new_track.tlwh
         self.mean, self.covariance = self.kalman_filter.update(
