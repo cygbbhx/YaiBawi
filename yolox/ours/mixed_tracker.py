@@ -5,6 +5,7 @@ from yolox.tracker.byte_tracker import STrack, BYTETracker, joint_stracks, sub_s
 from yolox.deepsort_tracker import kalman_filter, linear_assignment, iou_matching
 from yolox.deepsort_tracker.reid_model import Extractor
 from yolox.tracker import matching
+from yolox.ours.depth_tracker import depth_distance
 
 def _cosine_distance(a, b, data_is_normalized=False):
     if not data_is_normalized:
@@ -47,6 +48,7 @@ class OurDetection(STrack):
     def __init__(self, tlwh, score):
         super().__init__(tlwh, score)
         self.feature = None
+        self.previous_depth = self._tlwh[1] + self._tlwh[-1]
     
     def set_feature(self, feat):
         self.feature = feat
@@ -56,6 +58,9 @@ class OurDetection(STrack):
         self.kalman_filter = kalman_filter
         new_tlwh = new_track._tlwh
         self.mean, self.covariance = self.kalman_filter.initiate(self.tlwh_to_xyah(new_tlwh))
+
+    def current_depth(self):
+        return self.tlwh[1] + self.tlwh[-1]
 
 class MixedTracker(BYTETracker):
     def __init__(self, args, frame_rate=30, max_dist=0.1, nn_budget=100):
@@ -127,10 +132,13 @@ class MixedTracker(BYTETracker):
         
         ###########################################################################################
         dists_iou = matching.iou_distance(strack_pool, detections)
-        dists_cos = self.metric.distance(features, targets)
+        dists_depth = depth_distance(strack_pool, detections)
+        
+        # dists_cos = self.metric.distance(features, targets)
         if len(strack_pool) > 0:
-            dists_cos = (dists_cos - np.min(dists_cos)) / (np.max(dists_cos) - np.min(dists_cos))
-        dists = self.args.lambda_mix * dists_iou + (1-self.args.lambda_mix) * dists_cos
+            # dists_cos = (dists_cos - np.min(dists_cos)) / (np.max(dists_cos) - np.min(dists_cos))
+            dists_depth = dists_depth / 500
+        dists = self.args.lambda_mix * dists_iou + (1-self.args.lambda_mix) * dists_depth
         ###########################################################################################
 
         if not self.args.mot20:
@@ -168,9 +176,8 @@ class MixedTracker(BYTETracker):
         r_tracked_stracks = [strack_pool[i] for i in u_track if strack_pool[i].state == TrackState.Tracked]
         
         targets = [t.track_id for t in r_tracked_stracks]
-        dists = self.metric.distance(features_second, targets)
-        # dists = matching.iou_distance(r_tracked_stracks, detections_second)
-        matches, u_track, u_detection_second = matching.linear_assignment(dists, thresh=self.args.second_thresh)
+        depth_dists = depth_distance(r_tracked_stracks, detections_second)
+        matches, u_track, u_detection_second = matching.linear_assignment(depth_dists, thresh=self.args.second_thresh)
         for itracked, idet in matches:
             track = r_tracked_stracks[itracked]
             det = detections_second[idet]
