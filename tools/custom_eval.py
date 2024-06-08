@@ -191,3 +191,6 @@ def evaluate_result(source='/home/work/YaiBawi/sohyun/marioparty_annotated/', de
     print(strsummary)
     
     return idf1, ids, mota
+
+if __name__ == "__main__":
+    evaluate_result(dest='path_to_result_txt')
