@@ -37,7 +37,7 @@ class STrack(BaseTrack):
 
         self.lstm_tlwh = None
         self.predict_tlwh = None 
-        model_load_path = '/home/work/YaiBawi/kyunghoon/YaiBawi/yolox/ours/lstm.pth'
+        model_load_path = 'pretrained/lstm.pth'
         input_size = 4  # x, y, w, h
         hidden_size = 50
         output_size = 4
@@ -119,6 +119,7 @@ class STrack(BaseTrack):
         self.new_mean = self.predict_tlwh.squeeze(0).squeeze(0).detach().numpy()
         self.new_mean = self.unnormalize_tlwh(self.new_mean)
         self.new_mean = self.tlwh_to_xyah(self.new_mean)
+        self.new_mean = (self.mean[:4] + self.new_mean) / 2
         self.mean[:4] = self.new_mean
         
         self.state = TrackState.Tracked
@@ -158,7 +159,7 @@ class STrack(BaseTrack):
             self.lstm_tlwh = torch.cat((self.lstm_tlwh, tlwh_tensor.unsqueeze(0).unsqueeze(0)), dim=1)
 
             # If the number of tensors exceeds 10, discard the oldest one
-            if self.lstm_tlwh.size(1) > 10:
+            if self.lstm_tlwh.size(1) > 20:
                 self.lstm_tlwh = self.lstm_tlwh[:, 1:, :]
 
     def load_tlwh(self):
