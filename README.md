@@ -24,8 +24,6 @@ In Object Tracking, "ID Switch" refers to a problem where the identities of two 
 
 From this motivation, this project aims to 1) measure the performance of several current MOT works, in conditions where object appearance is completely identical) and 2) identify ways to improve performance. For this experiment, we have chosen Yabawi (the Shell Game), specifically the Matryoshka mini-game from Nintendo Mario Party, as a suitable task. We conduct several experiments based on ByteTrack to seek improvments in performance.
 
-Note that this is a toy project done in student organization. If you find any solutions to the problem, you are more than welcome to contact us.
-
 
 ## Team Members
 
@@ -90,3 +88,7 @@ bash ./scripts/run_ours.sh
 
 ## Acknowledgements
 Our code is built heavily upon [ByteTrack](https://github.com/ifzhang/ByteTrack). Our sincere thanks for their wonderful works and contributions.
+
+## Contact
+Note that this is a toy project done in a student organization. If you find any solutions to the problem, you are more than welcome to contact us.
+If you have any questions, please contact cygbbhx@yonsei.ac.kr.
