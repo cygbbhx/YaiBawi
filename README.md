@@ -11,9 +11,9 @@
 ## Updates
 
 - [ ] Release our custom dataset.
-- [ ] Release our custom detector weights.
 - [ ] Finalize scripts for each experiment setup.
 - [ ] Update additional experimental results.
+- [x] 06/08/2024: *Our custom detector/motion model weights are released!*
 - [x] 06/04/2024: *Initial version of code released.*
 
 
@@ -24,6 +24,7 @@ In Object Tracking, "ID Switch" refers to a problem where the identities of two 
 
 From this motivation, this project aims to 1) measure the performance of several current MOT works, in conditions where object appearance is completely identical) and 2) identify ways to improve performance. For this experiment, we have chosen Yabawi (the Shell Game), specifically the Matryoshka mini-game from Nintendo Mario Party, as a suitable task. We conduct several experiments based on ByteTrack to seek improvments in performance.
 
+Note that this is a toy project done in student organization. If you find any solutions to the problem, you are more than welcome to contact us.
 
 
 ## Team Members
@@ -54,6 +55,9 @@ git clone https://github.com/cygbbhx/kslr.git
 ### 2. Install Dependencies
 We follow the setup from [ByteTrack](https://github.com/ifzhang/ByteTrack?tab=readme-ov-file#installation).
 
+### 3. Downloading pretrained weights
+You can download our pretrained detector and LSTM motion model from [here](https://drive.google.com/drive/folders/1mYFg55ixbBfcScTTSInAUR-AGmSjbriX?usp=sharing). Make sure you put the weights in `pretrained/` folder.
+
 ## Running Tracking
 To run tracking, use the following command:
 ```bash
@@ -82,3 +86,7 @@ bash ./scripts/run_ours.sh
 |ByteTrack + Cascading + Re-ID + reset KF|<table><thead></thead><tbody><tr>**55.11**</tr></tbody></table>|<table><thead><tr></tr></thead><tbody><tr>**46**</tr></tbody></table>|<table><thead><tr></tr></thead><tbody><tr>**96.12**</tr></tbody></table>|
 
 - Note. We experiment various thresholds for each method and choose the best results.
+
+
+## Acknowledgements
+Our code is built heavily upon [ByteTrack](https://github.com/ifzhang/ByteTrack). Our sincere thanks for their wonderful works and contributions.
